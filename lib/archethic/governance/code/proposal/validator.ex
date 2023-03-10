@@ -12,6 +12,7 @@ defmodule Archethic.Governance.Code.Proposal.Validator do
   @marker Application.compile_env(:archethic, :marker)
 
   def run(nodes) do
+    IO.inspect("INSIDE VALIDATOR 12345")
     start = System.monotonic_time(:second)
 
     with true <- Regression.nodes_up?(nodes),
