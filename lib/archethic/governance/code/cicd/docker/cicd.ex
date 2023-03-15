@@ -193,27 +193,28 @@ defmodule Archethic.Governance.Code.CICD.Docker do
     dir = temp_dir("utn-#{address_encoded}-")
     nb_nodes = 5
 
-    compose_prefix = Path.basename(dir)
-    validator_container = "#{compose_prefix}_validator_1"
+    compose_prefix =
+      dir
+      |> Path.basename()
+      |> String.downcase()
+
+    validator_container = "#{compose_prefix}-validator-1"
     validator_continue = ["ash", "-c", "echo 'yes' > /proc/1/fd/0"]
 
-    nodes = 1..nb_nodes |> Enum.map(&"#{compose_prefix}_node#{&1}_1")
+    nodes = 1..nb_nodes |> Enum.map(&"#{compose_prefix}-node#{&1}-1")
 
     with :ok <- Logger.info("#{dir} Prepare", address: address_encoded),
-         :ok <- IO.inspect("#{dir} Prepare"),
          :ok <- testnet_prepare(dir, address, version),
          :ok <- Logger.info("#{dir} Start", address: address_encoded),
-         :ok <- IO.inspect("#{dir} Start"),
          {_, 0} <- testnet_start(dir, nb_nodes),
          # wait until the validator is ready for upgrade
          :ok <- Logger.info("#{dir} Part I", address: address_encoded),
-         :ok <- IO.inspect("#{dir} Part I"),
          {:ok, _} <- wait_for_marker(validator_container, @marker),
          :ok <- Logger.info("#{dir} Upgrade", address: address_encoded),
-         :ok <- IO.inspect("#{dir} Upgrade"),
+         _ <- IO.inspect("#{dir} Upgrade"),
          true <- testnet_upgrade(dir, nodes, version),
          :ok <- Logger.info("#{dir} Part II", address: address_encoded),
-         :ok <- IO.inspect("#{dir} Part II"),
+         _ <- IO.inspect("#{dir} Part II"),
          {_, 0} <- docker_exec(validator_container, validator_continue),
          0 <- docker_wait(validator_container, System.monotonic_time(:second)) do
       testnet_cleanup(dir, 0, address_encoded)
@@ -244,7 +245,9 @@ defmodule Archethic.Governance.Code.CICD.Docker do
         fn c ->
           with {_, 0} <- docker(["exec", c, "mkdir", "-p", "#{dst}"]),
                {_, 0} <- docker(["cp", rel, "#{c}:#{dst}/#{@release}"]),
-               {_, 0} <- docker(["exec", c, "./bin/archethic", "upgrade", version]) do
+               _ <- IO.inspect(version, label: "after cp version"),
+               {_, 0} <- docker(["exec", c, "./bin/archethic_node", "upgrade", version]),
+               _ <- IO.inspect("after exec") do
             :ok
           else
             error ->
@@ -281,7 +284,7 @@ defmodule Archethic.Governance.Code.CICD.Docker do
     |> Enum.at(0)
   end
 
-  defp wait_for_marker(container_name, marker, timeout \\ 6_000) do
+  defp wait_for_marker(container_name, marker, timeout \\ 60_000) do
     args = ["logs", container_name, "--follow", "--tail", "10"]
     opts = [:binary, :use_stdio, :stderr_to_stdout, line: 8192, args: args]
 

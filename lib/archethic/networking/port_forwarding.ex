@@ -62,7 +62,7 @@ defmodule Archethic.Networking.PortForwarding do
         {:ok, port}
 
       :error ->
-        Logger.error("Cannot publish the a random port #{port}")
+        Logger.error("Cannot publish the random port #{port}")
 
         fallback(port, _force? = true, retries - 1)
     end

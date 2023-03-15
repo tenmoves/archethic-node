@@ -81,9 +81,10 @@ defmodule Archethic.Utils.Regression do
     |> Enum.all?(&(&1 == {:ok, :ok}))
   end
 
-  defp node_up?(node, start \\ System.monotonic_time(:millisecond), timeout \\ 5 * 60_000)
+  # def node_up?(node, start \\ System.monotonic_time(:millisecond), timeout \\ 5 * 60_000)
+  def node_up?(node, start \\ System.monotonic_time(:millisecond), timeout \\ 3_000)
 
-  defp node_up?(node, start, timeout) do
+  def node_up?(node, start, timeout) do
     port = Application.get_env(:archethic, ArchethicWeb.Endpoint)[:http][:port]
 
     case WebClient.with_connection(node, port, &WebClient.request(&1, "GET", "/up")) do

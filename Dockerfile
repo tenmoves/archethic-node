@@ -35,8 +35,8 @@ RUN apk add --no-cache --update \
   wget \
   openssl \
   libsodium-dev \
-  gmp-dev 
-
+  gmp-dev \
+  miniupnpc 
 
 # Install hex and rebar
 RUN mix local.rebar --force \
@@ -68,10 +68,10 @@ RUN cd assets && \
   sass --no-source-map --style=compressed css/app.scss ../priv/static/css/app.css && cd -
 
 # build release
-RUN mix do assets.deploy, distillery.release
+RUN mix do assets.deploy, distillery.release 
 
 # gen PLT
-RUN if [ $with_tests -eq 1 ]; then mix git_hooks.run pre_push ;fi
+RUN mix git_hooks.run pre_push
 
 # Install
 RUN mkdir -p /opt/app \

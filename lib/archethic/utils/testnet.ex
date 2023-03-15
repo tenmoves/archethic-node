@@ -110,7 +110,7 @@ defmodule Archethic.Utils.Testnet do
   alias Archethic.Crypto
 
   defp p2p_port, do: 30_002
-  defp web_port, do: 40_000
+  defp web_port, do: 4_000
 
   @validator_ip 220
   @bench_ip 221
@@ -305,7 +305,9 @@ defmodule Archethic.Utils.Testnet do
     ip = fn i -> Subnet.at(base, i) end
 
     services = nodes_from(nb_nodes, src, image, ip)
-    uninodes = Map.keys(services)
+
+    uninodes =
+      Enum.map(services, fn {_, %{environment: %{"ARCHETHIC_STATIC_IP" => ip}}} -> ip end)
 
     networks = %{:net => %{ipam: %{driver: :default, config: [%{subnet: subnet}]}}}
 
@@ -328,19 +330,18 @@ defmodule Archethic.Utils.Testnet do
         #  profiles: ["validate"],
         networks: %{:net => %{ipv4_address: ip.(@validator_ip)}}
       })
-
-    # |> Map.put("bench", %{
-    #   image: image,
-    #   environment: %{
-    #     "ARCHETHIC_MUT_DIR" => "/opt/data"
-    #   },
-    #   command: ["./bin/archethic_node", "regression_test", "--bench" | uninodes],
-    #   volumes: [
-    #     "./bench_data/:/opt/data"
-    #   ],
-    #   # profiles: ["validate"],
-    #   networks: %{:net => %{ipv4_address: ip.(@bench_ip)}}
-    # })
+      |> Map.put("bench", %{
+        image: image,
+        environment: %{
+          "ARCHETHIC_MUT_DIR" => "/opt/data"
+        },
+        command: ["./bin/archethic_node", "regression_test", "--bench" | uninodes],
+        volumes: [
+          "./bench_data/:/opt/data"
+        ],
+        # profiles: ["validate"],
+        networks: %{:net => %{ipv4_address: ip.(@bench_ip)}}
+      })
 
     compose = %{version: "3.9", services: services, networks: networks}
 
@@ -392,6 +393,8 @@ defmodule Archethic.Utils.Testnet do
   end
 
   defp to_node(1, src, image, ip) do
+    node_1_ip_address = ip.(1 + 1)
+
     {"node1",
      %{
        build: %{context: src},
@@ -399,7 +402,7 @@ defmodule Archethic.Utils.Testnet do
        environment: %{
          "ARCHETHIC_CRYPTO_NODE_KEYSTORE_IMPL" => "SOFTWARE",
          "ARCHETHIC_CRYPTO_SEED" => "node1",
-         "ARCHETHIC_P2P_BOOTSTRAPPING_SEEDS" => seeder(ip.(1 + 1)),
+         "ARCHETHIC_P2P_BOOTSTRAPPING_SEEDS" => seeder(node_1_ip_address),
          "ARCHETHIC_STATIC_IP" => ip.(1 + 1),
          "ARCHETHIC_NETWORKING_IMPL" => "STATIC",
          "ARCHETHIC_NETWORKING_PORT_FORWARDING" => "false",
@@ -419,10 +422,6 @@ defmodule Archethic.Utils.Testnet do
        ],
        networks: %{:net => %{ipv4_address: ip.(1 + 1)}},
        command: [
-         "/wait-for-tcp.sh",
-         "--timeout=0",
-         "--strict",
-         "--",
          "./bin/archethic_node",
          "foreground"
        ]
@@ -430,6 +429,9 @@ defmodule Archethic.Utils.Testnet do
   end
 
   defp to_node(n, src, image, ip) do
+    node_1_ip_address = ip.(1 + 1)
+    ip_address = ip.(n + 1)
+
     {"node#{n}",
      %{
        image: image,
@@ -437,8 +439,8 @@ defmodule Archethic.Utils.Testnet do
        environment: %{
          "ARCHETHIC_CRYPTO_NODE_KEYSTORE_IMPL" => "SOFTWARE",
          "ARCHETHIC_CRYPTO_SEED" => "node#{n}",
-         "ARCHETHIC_P2P_BOOTSTRAPPING_SEEDS" => seeder(ip.(1 + 1)),
-         "ARCHETHIC_STATIC_IP" => ip.(n + 1),
+         "ARCHETHIC_P2P_BOOTSTRAPPING_SEEDS" => seeder(node_1_ip_address),
+         "ARCHETHIC_STATIC_IP" => ip_address,
          "ARCHETHIC_NETWORKING_IMPL" => "STATIC",
          "ARCHETHIC_NETWORKING_PORT_FORWARDING" => "false",
          "ARCHETHIC_NODE_ALLOWED_KEY_ORIGINS" => "software",
@@ -452,23 +454,20 @@ defmodule Archethic.Utils.Testnet do
          "ARCHETHIC_SELF_REPAIR_SCHEDULER_INTRERVAL" => "5 * * * * * *",
          "ARCHETHIC_NODE_IP_VALIDATION" => "false"
        },
-       networks: %{:net => %{ipv4_address: ip.(n + 1)}},
+       networks: %{:net => %{ipv4_address: ip_address}},
        volumes: [
          "#{Path.join([src, "/scripts/wait-for-tcp.sh"])}:/wait-for-tcp.sh:ro",
          "#{Path.join([src, "/scripts/wait-for-node.sh"])}:/wait-for-node.sh:ro"
        ],
        command: [
          "/wait-for-tcp.sh",
-         "--timeout=0",
-         "--strict",
-         "--",
-         "/wait-for-tcp.sh",
-         "node1:40000",
+         "--host=#{node_1_ip_address}",
+         "--port=#{web_port()}",
          "--timeout=0",
          "--strict",
          "--",
          "/wait-for-node.sh",
-         "http://node1:#{web_port()}/up",
+         "http://#{node_1_ip_address}:#{web_port()}/up",
          "./bin/archethic_node",
          "foreground"
        ]
