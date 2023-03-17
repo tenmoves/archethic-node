@@ -74,6 +74,7 @@ defmodule Archethic.Utils.Regression do
 
   def nodes_up?(nodes) do
     Logger.debug("Ensure #{inspect(nodes)} are up and ready")
+    IO.inspect("Ensure #{inspect(nodes)} are up and ready")
 
     nodes
     |> Task.async_stream(&node_up?/1, ordered: false, timeout: @node_up_timeout)
@@ -85,10 +86,11 @@ defmodule Archethic.Utils.Regression do
   def node_up?(node, start \\ System.monotonic_time(:millisecond), timeout \\ 3_000)
 
   def node_up?(node, start, timeout) do
-    port = Application.get_env(:archethic, ArchethicWeb.Endpoint)[:http][:port]
+    port = 40_000
 
     case WebClient.with_connection(node, port, &WebClient.request(&1, "GET", "/up")) do
       {:ok, ["up"]} ->
+        IO.inspect(node, label: "up is ok bruv")
         :ok
 
       {:ok, _} ->

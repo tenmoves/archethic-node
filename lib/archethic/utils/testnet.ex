@@ -110,7 +110,7 @@ defmodule Archethic.Utils.Testnet do
   alias Archethic.Crypto
 
   defp p2p_port, do: 30_002
-  defp web_port, do: 4_000
+  defp web_port, do: 40_000
 
   @validator_ip 220
   @bench_ip 221

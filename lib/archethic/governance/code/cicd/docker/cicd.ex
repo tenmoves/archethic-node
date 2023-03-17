@@ -224,9 +224,9 @@ defmodule Archethic.Governance.Code.CICD.Docker do
     end
   end
 
-  defp testnet_cleanup(_dir, 1, _address_encoded), do: 1
+  def testnet_cleanup(_dir, 1, _address_encoded), do: 1
 
-  defp testnet_cleanup(dir, code, address_encoded) do
+  def testnet_cleanup(dir, code, address_encoded) do
     Logger.info("#{dir} Cleanup", address: address_encoded)
     System.cmd("docker-compose", ["-f", compose_file(dir), "down"], @cmd_options)
     File.rm_rf!(dir)
@@ -285,6 +285,7 @@ defmodule Archethic.Governance.Code.CICD.Docker do
   end
 
   defp wait_for_marker(container_name, marker, timeout \\ 60_000) do
+    IO.inspect("wait for marker #{marker}")
     args = ["logs", container_name, "--follow", "--tail", "10"]
     opts = [:binary, :use_stdio, :stderr_to_stdout, line: 8192, args: args]
 
