@@ -10,7 +10,7 @@ defmodule Archethic.MixProject do
       deps_path: "deps",
       lockfile: "mix.lock",
       aliases: aliases(),
-      elixir: "~> 1.11",
+      elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       compilers: [:elixir_make] ++ Mix.compilers(),
@@ -106,7 +106,7 @@ defmodule Archethic.MixProject do
       {:crontab, "~> 1.1"},
       {:earmark, "~> 1.4"},
       {:sizeable, "~> 1.0"},
-      {:distillery, github: "archethic-foundation/distillery"},
+      {:distillery, github: "archethic-foundation/distillery", tag: "cd"},
       {:exjsonpath, "~> 0.9"},
       {:rand_compat, "~> 0.0.3"},
       {:gen_state_machine, "~> 3.0"},
@@ -121,11 +121,7 @@ defmodule Archethic.MixProject do
       {:floki, "~> 0.33"},
       {:ex_cldr, "~> 2.7"},
       {:ex_cldr_numbers, "~> 2.29"},
-      {:git_diff, "~> 0.6.4"},
-
-      # Numbering
-      {:nx, "~> 0.5"},
-      {:exla, "~> 0.5"}
+      {:git_diff, "~> 0.6.4"}
     ]
   end
 
